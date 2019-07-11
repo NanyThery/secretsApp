@@ -39,10 +39,12 @@ app.use(passport.session()); // Uses passport to use the session called before.
 //DB Settings////////////////////////////////
 
 mongoose.connect("mongodb://localhost:27017/usersDB", {
-    useNewUrlParser: true
+    useNewUrlParser: true,
+    autoIndex: false
 }); //connection to DB Mongo
 
 mongoose.set("useCreateIndex", true);
+
 
 
 const userSchema = new mongoose.Schema ({
