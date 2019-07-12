@@ -10,6 +10,7 @@ const passport = require ("passport");
 const passportLocalMongoose= require ("passport-local-mongoose");
 const GoogleStrategy = require ("passport-google-oauth20").Strategy;
 const findOrCreate = require('mongoose-findorcreate');
+const FacebookStrategy = require ("passport-facebook").Strategy;
 
 
 
@@ -50,13 +51,16 @@ mongoose.set("useCreateIndex", true);
 const userSchema = new mongoose.Schema ({
     email: String,
     password: String,
-    googleId: String
+    googleId: String,
+    facebookId: String
 });
 
 userSchema.plugin (passportLocalMongoose); // allows Passport to hash and salt passwords in the DB.
 userSchema.plugin(findOrCreate);
 
 const User = new mongoose.model("User", userSchema);
+
+/////////// Login with Passport ///////////////
 
 passport.use(User.createStrategy());
 
@@ -87,6 +91,23 @@ passport.use(new GoogleStrategy({
     }
 ));
 
+// Facebook  Strategy Setup for login the user //////////////////
+passport.use(new FacebookStrategy({
+        clientID: process.env.CLIENT_ID_FACEBOOK,
+        clientSecret: process.env.CLIENT_SECRET_FACEBOOK,
+        callbackURL: "http://localhost:3000/auth/facebook/secrets",
+     },
+    function (accessToken, refreshToken, profile, done) {
+        User.findOrCreate({facebookId: profile.id}, function (err, user) {
+            if (err) {
+                return done(err);
+            }
+            done(null, user);
+        });
+    }
+));
+
+
 //Routing
 
 app.get("/", function (req, res){
@@ -95,6 +116,9 @@ app.get("/", function (req, res){
 app.get("/auth/google", 
 passport.authenticate("google", {scope: ["profile"]})
 );
+
+app.get("/auth/facebook", passport.authenticate("facebook"));
+
 
 app.get("/login", function (req, res) {
     res.render("login");
@@ -105,6 +129,8 @@ app.get("/auth/google/secrets", passport.authenticate("google", {failureRedirect
     res.redirect("/secrets");
 
 });
+
+app.get("/auth/facebook/secrets", passport.authenticate("facebook", {successRedirect: "/secrets", failureRedirect: "/login"}));
 
 app.get("/register", function (req, res) {
     res.render("register");
